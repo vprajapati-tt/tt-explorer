@@ -177,3 +177,5 @@ bazel-testlogs/
 bazel-cache/
 
 .vscode/
+
+.DS_STORE
