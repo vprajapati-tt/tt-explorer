@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flask Iframe Example</title>
+    
+</head>
+<body>
+    <h1>{{ url }}</h1>
+    <iframe src="{{ url }}" width="100%" height="500" id="me-viewpoint"></iframe>
+    
+    <form  method="POST" enctype="multipart/form-data" id="upload-form">
+        <input type="file" name="file">
+        <input type="submit" value="Upload">
+    </form>
+
+    <script>
+        function getMethod(url, args, data, callback) {
+            var xhrGet = new XMLHttpRequest();
+            var query = Object.keys(args).map((key) => key + '=' + encodeURIComponent(args[key])).join('&');
+            xhrGet.open('GET', url + '?' + query);
+            xhrGet.setRequestHeader('Content-Type', 'application/json');
+            xhrGet.onreadystatechange = () => callback(xhrGet);
+            xhrGet.send(data);
+        };
+
+        function postMethod(url, args, data, callback) {
+            var xhrPost = new XMLHttpRequest();
+            var query = Object.keys(args).map((key) => key + '=' + encodeURIComponent(args[key])).join('&');
+            xhrPost.open('POST', url + '?' + query);
+            xhrPost.setRequestHeader('Content-Type', 'application/json');
+            xhrPost.onreadystatechange = () => callback(xhrPost);
+            xhrPost.send(data);
+        };
+
+        function getGraph(modelPath) {
+            return new Promise((resolve, reject) => {
+                getMethod('/api/get_graph', {'model_path': modelPath}, null, (xhrGet) => {
+                    if (xhrGet.readyState === XMLHttpRequest.DONE) {
+                        if (xhrGet.status === 200) {
+                            let graph = JSON.parse(xhrGet.responseText);
+                            resolve(graph);
+                        } else reject(new Error('Request failed with code ' + xhrGet.status));
+                    }
+                });
+            });
+        }
+
+        document.getElementById('upload-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the default form submission
+            var formData = new FormData(this); // Get the form data
+            console.log(formData);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/add_model');
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200) {
+                        var res = JSON.parse(xhr.responseText);
+                        let modelPath = res['path'];
+                        var meViewpoint = document.getElementById('me-viewpoint');
+                        getMethod('/api/render_url', {'model_path': modelPath}, null, (xhrGet) => {
+                            if (xhrGet.readyState === XMLHttpRequest.DONE) {
+                                if (xhrGet.status === 200) {
+                                    // Render the viewpoint to show the graph
+                                    var result = JSON.parse(xhrGet.responseText);
+                                    meViewpoint.src = result['url'];
+                                    // Get a JSON repr of the graph, and use it to collect the nodes
+                                    getGraph(modelPath).then(graph => {
+                                        let ttirGraph = graph['graphs'][0];
+                                        let nodes = ttirGraph['nodes'];
+                                        nodes.map((val, idx, arr) => {
+                                            // TODO: Create a page on a table to show these different nodes
+                                        });
+                                    }).catch(error => console.log(error));
+                                    // Now receive and list out all the nodes
+                                } else {
+                                    console.log('Failed to get render URL');
+                                }
+                            }
+                        });
+                    } else {
+                        console.log('Failed to add model');
+                    }
+                }
+            };
+            xhr.send(formData);
+        });
+
+    </script>
+</body>
+</html>
