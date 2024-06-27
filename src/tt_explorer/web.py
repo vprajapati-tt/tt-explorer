@@ -1,60 +1,9 @@
 from flask import Flask, render_template, request, abort, jsonify
 from werkzeug.datastructures import FileStorage
-from urllib.parse import quote
-import model_explorer
+from .tt_explorer import TTExplorer
 import threading
 import requests
-import json
 
-# Define all the model explorer API functionality and instantiate an instance in a thread.
-
-model_explorer_config = model_explorer.config()
-model_explorer_url = "http://localhost"
-model_explorer_port = 5006
-POST_ENDPOINT = f"{model_explorer_url}:{model_explorer_port}/apipost/v1/"
-GET_ENDPOINT = f"{model_explorer_url}:{model_explorer_port}/api/v1/"
-
-
-def upload_from_file(file_path) -> str:
-    with open(file_path, "r") as f:
-        resp = requests.post(POST_ENDPOINT + "/upload", files={"file": f})
-        assert resp.ok
-        return resp.json()["path"]  # Return temporary path provided by model-explorer
-
-
-def process_model(model_path) -> dict:
-    # Returns graph of processed .ttir model
-    cmd = {
-        "extensionId": "tt_adapter",
-        "cmdId": "convert",
-        "modelPath": model_path,
-        "deleteAfterConversion": False,
-        "settings": {},
-    }
-    resp = requests.post(POST_ENDPOINT + "/send_command", json=cmd)
-    return resp.json()
-
-
-def rendered_graph_url(model_path) -> str:
-    # Returns URL for model-explorer that renders that model_path
-    url_data = {"models": [{"url": model_path}]}
-    return f"{model_explorer_url}:{model_explorer_port}/?show_open_in_new_tab=1&data={quote(json.dumps(url_data))}"
-
-
-def run_model_explorer():
-    global model_explorer_url
-    # model_explorer_url += f':{model_explorer_port}/?show_open_in_new_tab=1&data={model_explorer_config.to_url_param_value()}'
-    model_explorer.visualize_from_config(
-        config=model_explorer_config,
-        no_open_in_browser=True,
-        port=model_explorer_port,
-        extensions=[
-            "tt_adapter"
-        ],  # Reliant on PR #85 [https://github.com/google-ai-edge/model-explorer/pull/85]
-    )
-
-
-# Define all the API functionality for the user to begin rendering their own Model Explorer instances
 
 app = Flask(__name__)
 
@@ -62,9 +11,6 @@ app = Flask(__name__)
 @app.route("/")
 def index():
     return render_template("index.html")
-
-
-# TODO: Plan out API skeleton to function with only model_path
 
 
 @app.route("/api/add_model", methods=["POST"])

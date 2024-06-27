@@ -25,11 +25,10 @@ class TTExplorer:
         # Start the model_explorer server to start using it.
         self._model_explorer_thread.start()
 
-    def get_model_path(self, filepath: str) -> str:
-        with open(filepath, "r") as f:
-            resp = requests.post(self.POST_ENDPOINT + "upload", files={"file": f})
-            assert resp.ok
-            return resp.json()["path"]  # Temporary Path provided by File
+    def get_model_path(self, file) -> str:
+        resp = requests.post(self.POST_ENDPOINT + "upload", files={"file": f})
+        assert resp.ok
+        return resp.json()["path"]  # Temporary Path provided by File
 
     def get_graph(self, model_path: str, settings={}):
         cmd = {
@@ -50,3 +49,26 @@ class TTExplorer:
     def load_new_graph(self, filepath: str):
         # This will load a new graph through the pure JSON adapter in model_explorer
         pass
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p", "--port", help="", type=int)
+    parser.add_argument("-u", "--url", help="")
+
+    args = parser.parse_args()
+
+    if args.port and args.url:
+        explorer = TTExplorer(args.port, args.url)
+    elif args.port:
+        explorer = TTExplorer(args.port)
+    else:
+        explorer = TTExplorer()
+
+    return explorer
+
+
+if __name__ == "__main__":
+    main()
