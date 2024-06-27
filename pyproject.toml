@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tt-explorer"
+version = "0.0.1"
+description = "TT-Explorer is a development tool to better visualize, modify, and optimize compiled TT-MLIR Graphs."
+authors = [{name = "Vraj Prajapati", email = "vprajapati@tenstorrent.com"}]
+readme = "README.md"
+
+[project.scripts]
+tt-explorer = "tt_explorer.tt-explorer:main"
