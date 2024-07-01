@@ -26,7 +26,7 @@ class TTExplorer:
         self._model_explorer_thread.start()
 
     def get_model_path(self, file) -> str:
-        resp = requests.post(self.POST_ENDPOINT + "upload", files={"file": f})
+        resp = requests.post(self.POST_ENDPOINT + "upload", files={"file": file})
         assert resp.ok
         return resp.json()["path"]  # Temporary Path provided by File
 

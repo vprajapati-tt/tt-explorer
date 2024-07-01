@@ -1,10 +1,10 @@
 from flask import Flask, render_template, request, abort, jsonify
 from werkzeug.datastructures import FileStorage
-from .tt_explorer import TTExplorer
+from .tt_explorer import TTExplorer, main
 import threading
 import requests
 
-
+explorer: TTExplorer = None
 app = Flask(__name__)
 
 # TODO: Create GUI powered by API
@@ -19,16 +19,21 @@ def add_model():
         abort(400, "No file provided")
     file = request.files["file"]
     storage = FileStorage(file.stream, filename=file.filename, name=file.filename)
-    resp = requests.post(POST_ENDPOINT + "/upload", files={"file": storage})
-    assert resp.ok
-    return jsonify(resp.json())
+    return jsonify(explorer.get_model_path(storage))
 
 
 @app.route("/api/render_url", methods=["GET"])
 def render_url():
     if "model_path" not in request.args:
         abort(400, "Provide a model_path in Request Parameters")
-    return jsonify({"url": rendered_graph_url(request.args.get("model_path"))})
+    return jsonify(
+        {
+            "url": explorer.get_rendered_url(
+                request.args.get("model_path"),
+                request.args.get("node_data", default=[]),
+            )
+        }
+    )
 
 
 @app.route("/api/get_graph", methods=["GET"])
@@ -36,8 +41,7 @@ def get_graph():
     if "model_path" not in request.args:
         abort(400, "Provide a model_path in Request Parameters")
     model_path = request.args.get("model_path")
-    print(process_model(model_path))
-    return jsonify(process_model(model_path))
+    return jsonify(explorer.get_graph(model_path))
 
 
 @app.route("/api/get_nodes", methods=["GET"])
@@ -99,7 +103,5 @@ def set_attributes():
 
 if __name__ == "__main__":
     # Begin the Model Explorer with tt_adapter extension
-    model_explorer_thread = threading.Thread(target=run_model_explorer)
-    model_explorer_thread.start()
-
+    explorer = main()
     app.run(port=5007)

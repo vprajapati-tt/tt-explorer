@@ -12,7 +12,7 @@ readme = "README.md"
 dependencies = [
     "flask",
     "IPython",
-    "tt-adapter",
+    "ai-edge-model-explorer", # Can later replace with tt-adapter, but this mkaes it portable for now.
     "pre-commit",
     "black"
 ]
