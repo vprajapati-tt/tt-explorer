@@ -21,4 +21,4 @@ dependencies = [
 tt-explorer = "tt_explorer.tt_explorer:main"
 
 [project.urls]
-Repository = "https://github.com/justinchuby/model-explorer-onnx"
+Repository = "https://github.com/vprajapati-tt/tt-explorer"
