@@ -6,29 +6,45 @@ import json
 
 
 class TTExplorer:
-    def __init__(self, port=5006, url="http://localhost", config=None):
+    def __init__(self, port=8080, url="http://localhost", server=False, config=None):
         # "Public" Objects
         self.model_explorer_port = port
         self.model_explorer_url = f"{url}:{port}/"
         self.POST_ENDPOINT = self.model_explorer_url + "apipost/v1/"
         self.GET_ENDPOINT = self.model_explorer_url + "api/v1/"
-        # "Hidden" Objects
-        self._model_explorer_config = config if config else model_explorer.config()
-        self._model_explorer_thread = threading.Thread(
-            target=lambda: model_explorer.visualize_from_config(
-                config=self._model_explorer_config,
-                no_open_in_browser=True,
-                port=self.model_explorer_port,
-                extensions=["tt_adapter"],
+
+        # If creating server:
+        self.IS_SERVER = server
+        if self.IS_SERVER:
+            self._model_explorer_config = config if config else model_explorer.config()
+            self._model_explorer_thread = threading.Thread(
+                target=lambda: model_explorer.visualize_from_config(
+                    config=self._model_explorer_config,
+                    no_open_in_browser=True,
+                    port=self.model_explorer_port,
+                    extensions=["tt_adapter"],
+                )
             )
-        )
-        # Start the model_explorer server to start using it.
-        self._model_explorer_thread.start()
+            # Start the model_explorer server to start using it.
+            self._model_explorer_thread.daemon = True
+            self._model_explorer_thread.start()
 
     def get_model_path(self, file) -> str:
         resp = requests.post(self.POST_ENDPOINT + "upload", files={"file": file})
         assert resp.ok
         return resp.json()["path"]  # Temporary Path provided by File
+
+    def execute_model(self, model_path: str, settings={}):
+        cmd = {
+            "extensionId": "tt_adapter",
+            "cmdId": "execute",
+            "model_path": model_path,
+            "deleteAfterConversion": False,
+            "settings": settings,
+        }
+        resp = requests.post(self.POST_ENDPOINT + "send_command", json=cmd)
+        assert resp.ok
+        return resp.json()
 
     def get_graph(self, model_path: str, settings={}):
         cmd = {
@@ -46,10 +62,6 @@ class TTExplorer:
         url_data = {"models": [{"url": model_path}], "nodeData": node_data}
         return f"{self.model_explorer_url}?show_open_in_new_tab=1&data={quote(json.dumps(url_data))}"
 
-    def load_new_graph(self, filepath: str):
-        # This will load a new graph through the pure JSON adapter in model_explorer
-        pass
-
 
 def main():
     import argparse
@@ -61,11 +73,11 @@ def main():
     args = parser.parse_args()
 
     if args.port and args.url:
-        explorer = TTExplorer(args.port, args.url)
+        explorer = TTExplorer(args.port, args.url, server=True)
     elif args.port:
-        explorer = TTExplorer(args.port)
+        explorer = TTExplorer(args.port, server=True)
     else:
-        explorer = TTExplorer()
+        explorer = TTExplorer(server=True)
 
     return explorer
 
