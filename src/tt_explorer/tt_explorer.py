@@ -5,6 +5,10 @@ import requests
 import json
 
 
+def from_adapter_response(resp):
+    return resp
+
+
 class TTExplorer:
     def __init__(self, port=8080, url="http://localhost", server=False, config=None):
         # "Public" Objects
@@ -26,7 +30,6 @@ class TTExplorer:
                 )
             )
             # Start the model_explorer server to start using it.
-            self._model_explorer_thread.daemon = True
             self._model_explorer_thread.start()
 
     def get_model_path(self, file) -> str:
@@ -34,29 +37,42 @@ class TTExplorer:
         assert resp.ok
         return resp.json()["path"]  # Temporary Path provided by File
 
-    def execute_model(self, model_path: str, settings={}):
+    def initialize(self, settings={}):
+        # Should be moved into IS_SERVER block
         cmd = {
             "extensionId": "tt_adapter",
-            "cmdId": "execute",
-            "model_path": model_path,
+            "cmdId": "initialize",
+            "modelPath": "",
             "deleteAfterConversion": False,
             "settings": settings,
         }
         resp = requests.post(self.POST_ENDPOINT + "send_command", json=cmd)
         assert resp.ok
-        return resp.json()
+        return from_adapter_response(resp.json())
+
+    def execute_model(self, model_path: str, settings={}):
+        cmd = {
+            "extensionId": "tt_adapter",
+            "cmdId": "execute",
+            "modelPath": model_path,
+            "deleteAfterConversion": False,
+            "settings": settings,
+        }
+        resp = requests.post(self.POST_ENDPOINT + "send_command", json=cmd)
+        assert resp.ok
+        return from_adapter_response(resp.json())
 
     def get_graph(self, model_path: str, settings={}):
         cmd = {
             "extensionId": "tt_adapter",
             "cmdId": "convert",
-            "model_path": model_path,
+            "modelPath": model_path,
             "deleteAfterConversion": False,
             "settings": settings,
         }
         resp = requests.post(self.POST_ENDPOINT + "send_command", json=cmd)
         assert resp.ok
-        return resp.json()
+        return from_adapter_response(resp.json())
 
     def get_rendered_url(self, model_path: str, node_data=[]):
         url_data = {"models": [{"url": model_path}], "nodeData": node_data}
