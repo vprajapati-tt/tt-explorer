@@ -62,6 +62,18 @@ class TTExplorer:
         assert resp.ok
         return from_adapter_response(resp.json())
 
+    def apply_override(self, model_path: str, settings={}):
+        cmd = {
+            "extensionId": "tt_adapter",
+            "cmdId": "override",
+            "modelPath": model_path,
+            "deleteAfterConversion": False,
+            "settings": settings,
+        }
+        resp = requests.post(self.POST_ENDPOINT + "send_command", json=cmd)
+        assert resp.ok
+        return from_adapter_response(resp.json())
+
     def get_graph(self, model_path: str, settings={}):
         cmd = {
             "extensionId": "tt_adapter",
